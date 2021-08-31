@@ -1,0 +1,1 @@
+module github.com/machinekit/machinetalk_protobuf_go

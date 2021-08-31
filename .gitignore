@@ -1,0 +1,5 @@
+linuxcncgo
+__tmp
+*.gobak
+.ccls-cache
+.DS_Store

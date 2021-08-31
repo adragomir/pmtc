@@ -1,0 +1,71 @@
+Component 	Services 	Function
+HAL Remote Component 	halrcomp, halrcmd 	HAL Remote component interface.
+Application Launcher 	launcher, launchercmd 	Launching and monitoring Machinekit instances.
+Application Config 	config 	Deploying user interfaces and configurations.
+Application Command 	command 	Executing machine commands.
+Application Status 	status 	Monitoring the machine status.
+Application Error 	error 	Providing machine error messages.
+Application Log 	log 	Providing Machinekit log information.
+Preview 	preview, previewcmd 	Remote preview interface.
+
+Service Name 	ZeroMQ Pattern 	Implemented by 	Function
+halrcmd 	ROUTER-DEALER 	Haltalk 	HAL remote API
+halrcomp 	XPUB-SUB 	Haltalk 	HAL Remote component updates.
+log 	PUB-SUB 	msgd 	Publishing Machinekit log messages.
+launcher 	XPUB-SUB 	mklauncher 	Machinekit launcher configuration.
+launchercmd 	ROUTER-DEALER 	mklauncher 	Starting and stopping Machinekit instances.
+config 	ROUTER-DEALER 	configserver 	Deploying user interfaces and configurations.
+status 	XPUB-SUB 	mkwrapper 	Machine status updates.
+command 	ROUTER-DEALER 	mkwrapper 	Executing machine commands.
+error 	PUB-SUB 	mkwrapper 	Publishing machine error messages.
+file 	FTP 	mkwrapper 	Remote access to GCode program files.
+previewcmd 	ROUTER-DEALER 	previewmodule 	Starting and stopping the remote preview interpreter.
+preview 	PUB-SUB 	previewmodule 	Remote preview interpreter results.
+
+
+saving gl data
+
+	ctx->pushGlslProg();
+	    GLint curProgramId;
+	    glGetIntegerv( GL_CURRENT_PROGRAM, &curProgramId );
+
+	ctx->pushViewport();
+
+	ctx->pushScissor();
+    	GLint params[4];
+		glGetIntegerv( GL_SCISSOR_BOX, params ); 
+	ctx->pushLineWidth();
+
+
+	ctx->pushActiveTexture();
+		GLint queriedInt;
+		glGetIntegerv( GL_ACTIVE_TEXTURE, &queriedInt );
+
+	ctx->pushBlendFuncSeparate();
+        glGetIntegerv( GL_BLEND_SRC_RGB, &queriedInt );
+        glGetIntegerv( GL_BLEND_DST_RGB, &queriedInt );
+        glGetIntegerv( GL_BLEND_SRC_ALPHA, &queriedInt );
+        glGetIntegerv( GL_BLEND_DST_ALPHA, &queriedInt );
+
+	ctx->pushCullFace();
+    	GLint queriedInt;
+		glGetIntegerv( GL_CULL_FACE_MODE, &queriedInt );
+	ctx->pushFrontFace();
+        glGetIntegerv( GL_FRONT_FACE, &queriedInt );
+	ctx->pushTextureBinding( GL_TEXTURE_2D, 0 );
+
+		GLint queriedInt = 0;
+		GLenum targetBinding = Texture::getBindingConstantForTarget( target );
+		if( targetBinding > 0 ) {
+			ScopedActiveTexture actScp( textureUnit );
+			glGetIntegerv( targetBinding, &queriedInt );
+
+	ctx->pushBoolState( GL_SCISSOR_TEST );
+    		GLboolean result = glIsEnabled( cap );
+	ctx->pushBoolState( GL_CULL_FACE );
+#if ! defined( CINDER_GL_ANGLE )
+	ctx->pushBoolState( GL_LINE_SMOOTH );
+#endif
+	ctx->pushBoolState( GL_DEPTH_TEST );
+	ctx->pushBoolState( GL_BLEND );
+	ctx->pushBoolState( GL_CULL_FACE );

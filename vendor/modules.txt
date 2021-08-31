@@ -1,0 +1,101 @@
+# gioui.org v0.0.0-20210819082505-f47508729638
+## explicit
+# gioui.org/example v0.0.0-20210804164344-256666b4c0fa
+## explicit
+# gioui.org/x v0.0.0-20210805142029-e0acbf68bc23
+## explicit
+# github.com/andrewtj/dnssd v0.0.0-20161222030342-242ed8d297c8
+## explicit
+# github.com/go-gl/gl v0.0.0-20210315015930-ae072cafe09d
+## explicit
+github.com/go-gl/gl/v3.3-core/gl
+# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210311203641-62640a716d48
+## explicit
+github.com/go-gl/glfw/v3.3/glfw
+github.com/go-gl/glfw/v3.3/glfw/glfw/deps
+github.com/go-gl/glfw/v3.3/glfw/glfw/deps/glad
+github.com/go-gl/glfw/v3.3/glfw/glfw/deps/mingw
+github.com/go-gl/glfw/v3.3/glfw/glfw/deps/vs2008
+github.com/go-gl/glfw/v3.3/glfw/glfw/include/GLFW
+github.com/go-gl/glfw/v3.3/glfw/glfw/src
+# github.com/go-gl/mathgl v1.0.0 => ./localvendor/github.com/go-gl/mathgl/
+## explicit
+github.com/go-gl/mathgl/mgl32
+github.com/go-gl/mathgl/mgl64
+# github.com/grandcat/zeroconf v1.0.0
+## explicit
+# github.com/inkyblackness/imgui-go/v4 v4.3.0
+## explicit
+github.com/inkyblackness/imgui-go/v4
+# github.com/jlaffaye/ftp v0.0.0-20210307004419-5d4190119067
+## explicit
+github.com/jlaffaye/ftp
+# github.com/looplab/fsm v0.2.0 => ./localvendor/github.com/looplab/fsm/
+## explicit
+github.com/looplab/fsm
+# github.com/machinekit/machinetalk_go v0.0.0-00010101000000-000000000000 => ./localvendor/github.com/machinekit/machinetalk_go/
+## explicit
+github.com/machinekit/machinetalk_go/application
+github.com/machinekit/machinetalk_go/common
+github.com/machinekit/machinetalk_go/pathview
+# github.com/machinekit/machinetalk_protobuf_go v0.0.0-00010101000000-000000000000 => ./localvendor/github.com/machinekit/machinetalk_protobuf_go/
+## explicit
+github.com/machinekit/machinetalk_protobuf_go
+# github.com/miekg/dns v1.1.43
+## explicit
+# github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
+## explicit
+github.com/nu7hatch/gouuid
+# github.com/pebbe/zmq4 v1.2.7
+## explicit
+github.com/pebbe/zmq4
+# github.com/tmm1/dnssd v0.0.0-20180920054121-2469354f9317
+## explicit
+github.com/tmm1/dnssd
+# github.com/trivigy/event v1.1.0
+## explicit
+github.com/trivigy/event
+# golang.org/x/exp v0.0.0-20210722180016-6781d3edade3
+## explicit
+# golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
+## explicit
+golang.org/x/image/math/f32
+golang.org/x/image/math/f64
+# golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
+## explicit
+# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+## explicit
+# golang.org/x/text v0.3.6
+## explicit
+# google.golang.org/protobuf v1.27.1
+## explicit
+google.golang.org/protobuf/encoding/prototext
+google.golang.org/protobuf/encoding/protowire
+google.golang.org/protobuf/internal/descfmt
+google.golang.org/protobuf/internal/descopts
+google.golang.org/protobuf/internal/detrand
+google.golang.org/protobuf/internal/encoding/defval
+google.golang.org/protobuf/internal/encoding/messageset
+google.golang.org/protobuf/internal/encoding/tag
+google.golang.org/protobuf/internal/encoding/text
+google.golang.org/protobuf/internal/errors
+google.golang.org/protobuf/internal/filedesc
+google.golang.org/protobuf/internal/filetype
+google.golang.org/protobuf/internal/flags
+google.golang.org/protobuf/internal/genid
+google.golang.org/protobuf/internal/impl
+google.golang.org/protobuf/internal/order
+google.golang.org/protobuf/internal/pragma
+google.golang.org/protobuf/internal/set
+google.golang.org/protobuf/internal/strs
+google.golang.org/protobuf/internal/version
+google.golang.org/protobuf/proto
+google.golang.org/protobuf/reflect/protoreflect
+google.golang.org/protobuf/reflect/protoregistry
+google.golang.org/protobuf/runtime/protoiface
+google.golang.org/protobuf/runtime/protoimpl
+google.golang.org/protobuf/types/descriptorpb
+# github.com/machinekit/machinetalk_go => ./localvendor/github.com/machinekit/machinetalk_go/
+# github.com/machinekit/machinetalk_protobuf_go => ./localvendor/github.com/machinekit/machinetalk_protobuf_go/
+# github.com/looplab/fsm => ./localvendor/github.com/looplab/fsm/
+# github.com/go-gl/mathgl => ./localvendor/github.com/go-gl/mathgl/

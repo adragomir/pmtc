@@ -1,0 +1,449 @@
+{
+package parser
+import (
+    "strconv"
+    "log"
+    "regexp"
+    "os"
+)
+
+var (
+    commandReStr = `([EFGHIJKLMNPRSTXYZ][-+]?[0-9]*\.?[0-9]*)`
+    commandLineStr = regexp.MustCompile(`^([EFGHIJKLMNPRSTXYZ][-+]?[0-9]*\.?[0-9]*)+$`)
+    commandRe = regexp.MustCompile(`([EFGHIJKLMNPRSTXYZ])([-+]?[0-9]*\.?[0-9]*)`)
+    splitter = regexp.MustCompile(`\r?\n`)
+    ignoreRe = regexp.MustCompile(`[\t ]*%[\t ]*`)
+    tabsSpacesRe = regexp.MustCompile(`[\t ]+`)
+    comment1Re = regexp.MustCompile(`[(][^)]*[)]`)
+    comment2Re = regexp.MustCompile(`;.*$`)
+)
+
+func cleanup(line string) string {
+    tmp := tabsSpacesRe.ReplaceAllString(line, "")
+    tmp = comment1Re.ReplaceAllString(tmp, "")
+    tmp = comment2Re.ReplaceAllString(tmp, "")
+    return tmp
+}
+
+func parseQuick(l string) ([]Expr, error) {
+    if commandLineStr.MatchString(l) {
+      out := make([]Expr, 0)
+      for _, piece := range commandRe.FindAllStringSubmatch(l, -1) {
+			val, _ := strconv.ParseFloat(piece[2], 32)
+			tmpConst := ConstExpr{
+				Val:    val,
+				RawVal: piece[2],
+			}
+			if piece[1] == "G" {
+				tmpConst.RawVal = strings.TrimLeft(tmpConst.RawVal, "0")
+			}
+			tmp := WordExpr{Word: piece[1], Val: tmpConst}
+			out = append(out, tmp)
+      }
+      return out, nil
+    } else {
+      return nil, errors.New("no quick")
+    }
+}
+
+type LineAst struct {
+	LineNo int
+	Ast []Expr
+}
+
+func ParseAll(in string) ([]LineAst, error) {
+	out := make([]LineAst, 0)
+	for lineNo, l := range splitter.Split(in, -1) {
+	  	cleaned := cleanup(l)
+    	parser := newParser("nil.ngc", []byte(cleaned))
+    	if cleaned == "" {
+      	continue
+    	}
+    	if ast, err := parseQuick(cleaned); err == nil && false {
+		  	out = append(out, LineAst {LineNo: lineNo, Ast: ast})
+    	} else {
+			rawAst2, err2 := parser.parse(g)
+			if err2 != nil {
+				return nil, errors.New(fmt.Sprintf("%s", err2))
+			}
+			ast2 := rawAst2.([]interface{})
+			casted := make([]Expr, len(ast2))
+			for i, val := range ast2 {
+				casted[i] = val.(Expr)
+			}
+			gIndices0 := make([]int, 0)
+			for i, val := range casted {
+				word, isWord := val.(WordExpr)
+				if isWord {
+					if word.Word == "G" {
+						gIndices0 = append(gIndices0, i)
+					}
+				}
+			}
+			gIndices1 := make([][]int, 0)
+			if len(gIndices0) > 1 {
+				for i := 0; i < len(gIndices0) -1; i++ {
+					gIndices1 = append(gIndices1, []int{gIndices0[i], gIndices0[i+1]})
+				}
+				gIndices1 = append(gIndices1, []int{gIndices0[len(gIndices0)-1], len(casted)})
+			}
+
+			if len(gIndices1) > 0 {
+				outss := make([]LineAst, 0)
+				for _, indices := range gIndices1 {
+					start := indices[0]
+					end := indices[1]
+					if start < end {
+						outss = append(outss, LineAst {LineNo: lineNo, Ast: casted[start:end]})
+					} else {
+						outss = append(outss, LineAst {LineNo: lineNo, Ast: casted[start:]})
+					}
+				}
+				out = append(out, outss...)
+			} else {
+				out = append(out, LineAst {LineNo: lineNo, Ast: casted})
+			}
+    	}
+	}
+	return out, nil
+}
+
+func isl(v interface{}) []interface{} {
+	if v == nil {
+		return nil
+	}
+	return v.([]interface{})
+}
+
+func termer(first interface{}, rest interface{}) (Expr, error) {
+	l := first.(Expr)
+	for _, v := range isl(rest) {
+		restExpr := isl(v)
+		r := restExpr[1].(Expr)
+
+		tmp := BinaryExpr{
+			Op: CreateOp(restExpr[0].(string)),
+			L:  l,
+			R:  r,
+		}
+		l = tmp
+	}
+	return l, nil
+}
+
+type NumParameter int
+type VarParameter string
+type Var string
+
+type Expr interface {
+	isExpr()
+}
+
+type ConstExpr struct {
+	Val float64
+	RawVal string
+}
+
+func (_ ConstExpr) isExpr() {}
+func (e ConstExpr) String() string {
+	return fmt.Sprintf("%.3f - '%s'", e.Val, e.RawVal)
+}
+
+type ParamType int
+
+const (
+	VarType ParamType = iota
+	NumType
+)
+
+type VarExpr struct {
+	Name string
+}
+
+func (_ VarExpr) isExpr() {}
+
+type ParamExpr struct {
+	Type ParamType
+	Val  interface{}
+}
+
+func (_ ParamExpr) isExpr() {}
+func (e ParamExpr) Value() {
+}
+func (e ParamExpr) String() string {
+	if e.Type == VarType {
+		return fmt.Sprintf("#%s", e.Val.(string))
+	} else {
+		return fmt.Sprintf("#%d", e.Val.(int))
+	}
+}
+
+type Op int
+
+const (
+	PowOp = iota
+	MulOp
+	DivOp
+	ModOp
+	PlusOp
+	MinusOp
+	EqOp
+	NeOp
+	GtOp
+	GeOp
+	LtOp
+	LeOp
+	AndOp
+	OrOp
+	XorOp
+	NullOp
+)
+
+func (o Op) String() string {
+	return opToName[o]
+}
+
+var opToName = map[Op]string{
+	PowOp:   "**",
+	MulOp:   "*",
+	DivOp:   "/",
+	ModOp:   "MOD",
+	PlusOp:  "+",
+	MinusOp: "-",
+	EqOp:    "EQ",
+	NeOp:    "NE",
+	GtOp:    "GT",
+	GeOp:    "GE",
+	LtOp:    "LT",
+	LeOp:    "LE",
+	AndOp:   "AND",
+	OrOp:    "OR",
+	XorOp:   "XOR",
+}
+var nameToOp = map[string]Op{
+	"**":  PowOp,
+	"*":   MulOp,
+	"/":   DivOp,
+	"MOD": ModOp,
+	"+":   PlusOp,
+	"-":   MinusOp,
+	"EQ":  EqOp,
+	"NE":  NeOp,
+	"GT":  GtOp,
+	"GE":  GeOp,
+	"LT":  LtOp,
+	"LE":  LeOp,
+	"AND": AndOp,
+	"OR":  OrOp,
+	"XOR": XorOp,
+}
+
+func CreateOp(in string) Op {
+	return nameToOp[in]
+}
+
+type BinaryExpr struct {
+	Op Op
+	L  Expr
+	R  Expr
+}
+
+func (_ BinaryExpr) isExpr() {}
+func (e BinaryExpr) String() string {
+	return fmt.Sprintf("%s(%s, %s)", e.Op, e.L, e.R)
+}
+
+type FuncOp struct {
+	Fct  string
+	Arg1 Expr
+	Arg2 Expr
+}
+
+func (_ FuncOp) isExpr() {}
+func (e FuncOp) String() string {
+	return fmt.Sprintf("%s(%s)", e.Fct, e.Arg1)
+}
+
+type AssignOp struct {
+	Param ParamExpr
+	Val   Expr
+}
+
+func (_ AssignOp) isExpr() {}
+func (e AssignOp) String() string {
+	return fmt.Sprintf("%s = %s", e.Param, e.Val)
+}
+
+type WordExpr struct {
+	Word string
+	WordVal string
+	Val  Expr
+}
+
+func (_ WordExpr) isExpr() {}
+func (e WordExpr) String() string {
+	return fmt.Sprintf("%s[%s]", e.Word, e.Val)
+}
+
+
+}
+
+Line <- x:(Affectation / Word)* EOF {
+ 	return x.([]interface{}), nil
+}
+
+_ "whitespace" <- [ \n\t\r]*
+
+number <- ([0-9]+)  {
+    return string(c.text), nil
+}
+
+decimalPart <- '.' number? {
+    return string(c.text), nil
+}
+integerAndDecimal <- number decimalPart? {
+    return string(c.text), nil
+}
+unsignedNumber <- (integerAndDecimal / decimalPart) {
+    return string(c.text), nil
+}
+Decimal <- ('+' / '-')? unsignedNumber {
+    tmp, _ := strconv.ParseFloat(string(c.text), 32)
+    return ConstExpr{Val: tmp, RawVal: string(c.text)}, nil
+}
+
+ident <- ('_' / [0-9] / [a-z] / [A-Z] )+ {
+    return string(c.text), nil
+}
+VarName <- '<' ident:ident '>' {
+    return VarExpr{Name: ident.(string)}, nil
+}
+Parameter <- '#' param:(number / VarName) {
+    switch param.(type) {
+      case VarExpr:
+        return ParamExpr{ Type:VarType, Val: param.(VarExpr).Name }, nil
+      default:
+        num, _ := strconv.Atoi(param.(string))
+        return ParamExpr{ Type:NumType, Val: num }, nil
+    }
+}
+
+Expr <- first:TermBoolean rest:( BooleanOp TermBoolean )* {
+    return termer(first, rest)
+}
+
+TermBoolean <- first:TermCompare rest:( CompareOp TermCompare )* {
+    return termer(first, rest)
+}
+
+TermCompare <- first:TermArithAdd rest:( ArithAddOp TermArithAdd )* {
+    return termer(first, rest)
+}
+
+TermArithAdd <- first:TermArithMul rest:( ArithMulOp TermArithMul )* {
+    return termer(first, rest)
+}
+
+TermArithMul <- first:TermArithPow rest:( ArithPowOp TermArithPow )* {
+    return termer(first, rest)
+}
+
+TermArithPow <- '[' expr:Expr ']' {
+    return expr, nil
+} / parameter:Parameter {
+    return parameter, nil
+} / decimal:Decimal {
+  return decimal.(ConstExpr), nil
+} / funcCall:FuncCallOp {
+  return funcCall, nil
+}
+
+BooleanOp <- ( "AND" / "OR" / "XOR" ) {
+    return string(c.text), nil
+}
+
+CompareOp <- ( "EQ" / "NE" / "GT" / "GE" / "LT" / "LE" ) {
+    return string(c.text), nil
+}
+
+ArithAddOp <- ( '+' / '-' ) {
+    return string(c.text), nil
+}
+
+ArithMulOp <- ( '*' / '/' / "MOD" ) {
+    return string(c.text), nil
+}
+
+ArithPowOp <- "**" {
+    return string(c.text), nil
+}
+
+
+FuncCallOp <- ( AtanCall / AbsCall / AcosCall / AsinCall / CosCall / ExpCall / FixCall / FupCall / RoundCall / LnCall / SinCall / SqrtCall / TanCall / ExistsCall  )
+
+AtanCall <- fct:"ATAN" "[" arg1:Expr "]/[" arg2:Expr "]" {
+    return FuncOp{Fct: fct.(string), Arg1: arg1.(Expr), Arg2: arg2.(Expr)}, nil
+}
+
+AbsCall <- fct:"ABS" "[" arg1:Expr "]" {
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+AcosCall <- fct:"ACOS" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+AsinCall <- fct:"ASIN" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+CosCall <- fct:"COS" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+ExpCall <- fct:"EXP" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+FixCall <- fct:"FIX" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+FupCall <- fct:"FUP" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+RoundCall <- fct:"ROUND" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+LnCall <- fct:"LN" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+SinCall <- fct:"SIN" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+SqrtCall <- fct:"SQRT" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+TanCall <- fct:"TAN" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+ExistsCall <- fct:"EXISTS" "[" arg1:Expr "]"{
+    return FuncOp{Fct: string(fct.([]byte)), Arg1: arg1.(Expr)}, nil
+}
+
+Affectation <- parameter:Parameter _ '=' _ expr:TermArithPow {
+  return AssignOp{Param: parameter.(ParamExpr), Val: expr.(Expr)}, nil
+}
+
+Word <- word:[EFGHIJKLMNPRSTXYZ] expr:Expr {
+    return WordExpr{Word: string(word.([]byte)), Val: expr.(Expr)}, nil
+}
+
+
+EOF <- !.
